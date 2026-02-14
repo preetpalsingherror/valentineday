@@ -153,7 +153,7 @@
         const items = [
             { id: 1, x: 0.2, y: 0.2, type: 'key', icon: '🗝️', collected: false, msg: "KEY 1: THE PAST.<br>Remember when we met? My life changed forever that day." },
             { id: 2, x: 0.8, y: 0.2, type: 'key', icon: '🗝️', collected: false, msg: "KEY 2: THE PRESENT.<br>Every fight, every laugh, every moment... I choose you, every single day." },
-            { id: 3, x: 0.2, y: 0.8, type: 'key', icon: '🗝️', collected: false, msg: "KEY 3: THE FUTURE.<br>I want to grow old with you. I promise to be your home." },
+            { id: 3, x: 0.2, y: 0.8, type: 'key', icon: '🗝️', collected: false, msg: "KEY 3: THE FUTURE.<br>I want to grow with you. I promise to be your home." },
             { id: 4, x: 0.8, y: 0.8, type: 'chest', icon: '🔒', collected: false, msg: "You unlocked the Treasure Chest!<br>Ready to see the most beautiful thing in the universe?" }
         ];
 
@@ -316,7 +316,7 @@
             document.getElementById('final').style.display = 'flex';
             confetti({ particleCount: 200, spread: 100, colors: ['#ffd700', '#ff69b4'] });
             
-            const msg = "I beat the Quest! 🗝️❤️ My treasure is ME (and You)! Happy Valentine's Day!";
+            const msg = "I beat the Quest! 🗝️❤️ Happy Valentine's Day!";
             document.getElementById('wa-link').href = `https://wa.me/${yourPhoneNumber}?text=${encodeURIComponent(msg)}`;
         }
 
