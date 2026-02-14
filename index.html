@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>The Treasure 💎</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: none; }
+
+        body {
+            height: 100dvh; width: 100vw;
+            background: #000; color: #fff;
+            margin: 0; padding: 0;
+            overflow: hidden;
+            font-family: 'Press Start 2P', cursive;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* GAME LAYER */
+        canvas {
+            display: block;
+            background: #1a1a1a;
+        }
+
+        /* UI LAYER */
+        .ui-top {
+            position: absolute; top: 20px; width: 100%;
+            text-align: center; pointer-events: none;
+            text-shadow: 2px 2px #000; z-index: 10;
+        }
+
+        .inventory {
+            margin-top: 10px; display: flex; justify-content: center; gap: 15px;
+        }
+        .slot {
+            width: 40px; height: 40px; border: 2px solid #555;
+            background: rgba(0,0,0,0.5); border-radius: 5px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; opacity: 0.3; transition: 0.3s;
+        }
+        .slot.active { border-color: #ffd700; opacity: 1; box-shadow: 0 0 10px #ffd700; }
+
+        /* MESSAGE BOX */
+        .msg-box {
+            position: absolute; bottom: 30px; left: 5%; width: 90%;
+            background: rgba(0, 0, 0, 0.9);
+            border: 4px solid #fff; border-radius: 8px;
+            padding: 20px; display: none; flex-direction: column;
+            z-index: 20;
+        }
+        .msg-text {
+            font-family: 'Nunito', sans-serif; font-size: 1.1rem; line-height: 1.5; margin-bottom: 15px;
+        }
+        .next-btn {
+            align-self: flex-end; background: #fff; color: #000; border: none;
+            padding: 10px 20px; font-family: 'Press Start 2P'; font-size: 0.7rem; cursor: pointer;
+        }
+
+        /* START SCREEN */
+        .start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .play-btn {
+            background: #ff69b4; color: #fff; border: none; padding: 20px 40px;
+            font-family: 'Press Start 2P'; font-size: 1rem; margin-top: 20px; cursor: pointer;
+            box-shadow: 0 5px 0 #c71585;
+        }
+        .play-btn:active { transform: translateY(5px); box-shadow: none; }
+
+        /* FINAL SCREEN (CAMERA) */
+        .final-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 200;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        video {
+            width: 90%; max-width: 400px; border: 5px solid #ffd700;
+            border-radius: 15px; transform: scaleX(-1);
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+        }
+        .wa-btn {
+            background: #25D366; color: #fff; text-decoration: none;
+            padding: 15px 30px; border-radius: 50px; font-family: 'Nunito'; font-weight: bold;
+            margin-top: 20px; display: inline-block;
+        }
+
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop>
+        <source src="https://assets.mixkit.co/active_storage/stock_music/299/299-preview.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sfx-collect">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="start-screen" id="start">
+        <div style="color:#888; font-size:0.7rem; margin-bottom:10px;">VALENTINE QUEST</div>
+        <div style="font-size:3rem; margin-bottom:20px;">🏰</div>
+        <button class="play-btn" onclick="startGame()">TAP TO START</button>
+    </div>
+
+    <div class="ui-top">
+        <div>COLLECT THE KEYS</div>
+        <div class="inventory">
+            <div class="slot" id="s1">🗝️</div>
+            <div class="slot" id="s2">🗝️</div>
+            <div class="slot" id="s3">🗝️</div>
+        </div>
+    </div>
+
+    <canvas id="game"></canvas>
+
+    <div class="msg-box" id="msgBox">
+        <div class="msg-text" id="msgContent"></div>
+        <button class="next-btn" onclick="closeMsg()">CONTINUE</button>
+    </div>
+
+    <div class="final-screen" id="final">
+        <div style="color:#ffd700; font-size:1.2rem; margin-bottom:20px; text-align:center;">THE TREASURE IS YOU</div>
+        <video id="cam" autoplay playsinline muted></video>
+        <a href="#" id="wa-link" class="wa-btn">I Found The Treasure! ❤️</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        const yourPhoneNumber = "917795253497"; 
+
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('start');
+        const msgBox = document.getElementById('msgBox');
+        const msgContent = document.getElementById('msgContent');
+        const video = document.getElementById('cam');
+        const audio = document.getElementById('bg-music');
+        const sfx = document.getElementById('sfx-collect');
+
+        // GAME STATE
+        let width, height;
+        let gameRunning = false;
+        let paused = false;
+        let collectedCount = 0;
+
+        // PLAYER
+        const player = { x: 0, y: 0, targetX: 0, targetY: 0, speed: 0.08 };
+        
+        // OBJECTS
+        const items = [
+            { id: 1, x: 0.2, y: 0.2, type: 'key', icon: '🗝️', collected: false, msg: "KEY 1: THE PAST.<br>Remember when we met? My life changed forever that day." },
+            { id: 2, x: 0.8, y: 0.2, type: 'key', icon: '🗝️', collected: false, msg: "KEY 2: THE PRESENT.<br>Every fight, every laugh, every moment... I choose you, every single day." },
+            { id: 3, x: 0.2, y: 0.8, type: 'key', icon: '🗝️', collected: false, msg: "KEY 3: THE FUTURE.<br>I want to grow old with you. I promise to be your home." },
+            { id: 4, x: 0.8, y: 0.8, type: 'chest', icon: '🔒', collected: false, msg: "You unlocked the Treasure Chest!<br>Ready to see the most beautiful thing in the universe?" }
+        ];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Set initial player pos to center
+            if(!gameRunning) {
+                player.x = width / 2;
+                player.y = height / 2;
+                player.targetX = width / 2;
+                player.targetY = height / 2;
+            }
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            gameRunning = true;
+            audio.volume = 0.5;
+            audio.play();
+
+            // Init Camera
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => { video.srcObject = stream; })
+                .catch(err => console.log("Camera Error", err));
+
+            loop();
+        }
+
+        // TOUCH / CLICK HANDLER
+        canvas.addEventListener('pointerdown', (e) => {
+            if(paused) return;
+            player.targetX = e.clientX;
+            player.targetY = e.clientY;
+        });
+
+        function loop() {
+            if(!gameRunning) return;
+            
+            if(!paused) {
+                update();
+                draw();
+            }
+            requestAnimationFrame(loop);
+        }
+
+        function update() {
+            // Smooth Move (Lerp)
+            player.x += (player.targetX - player.x) * player.speed;
+            player.y += (player.targetY - player.y) * player.speed;
+
+            // Collision Check
+            items.forEach(item => {
+                if(item.collected) return;
+
+                // Convert relative coords to pixels
+                let ix = item.x * width;
+                let iy = item.y * height;
+
+                // Distance
+                let dx = player.x - ix;
+                let dy = player.y - iy;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+
+                if(dist < 40) {
+                    if(item.type === 'key') {
+                        collectItem(item);
+                    } else if (item.type === 'chest' && collectedCount === 3) {
+                        collectItem(item);
+                    }
+                }
+            });
+        }
+
+        function draw() {
+            // Clear
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Grid
+            ctx.strokeStyle = '#222';
+            ctx.beginPath();
+            for(let x=0; x<width; x+=50) { ctx.moveTo(x,0); ctx.lineTo(x,height); }
+            for(let y=0; y<height; y+=50) { ctx.moveTo(0,y); ctx.lineTo(width,y); }
+            ctx.stroke();
+
+            // Draw Items
+            ctx.font = "30px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            items.forEach(item => {
+                if(item.collected) return;
+                let ix = item.x * width;
+                let iy = item.y * height;
+                
+                // Draw Icon
+                let icon = item.icon;
+                if(item.type === 'chest' && collectedCount === 3) icon = '🎁'; // Change lock to gift
+                
+                ctx.fillText(icon, ix, iy);
+
+                // Guide Line (Optional hint)
+                if(collectedCount < 3 && item.type === 'key' && item.id === collectedCount + 1) {
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.2)';
+                    ctx.beginPath();
+                    ctx.moveTo(player.x, player.y);
+                    ctx.lineTo(ix, iy);
+                    ctx.stroke();
+                }
+            });
+
+            // Draw Player
+            ctx.font = "40px serif";
+            ctx.fillText("👸", player.x, player.y);
+            
+            // "Tap" Marker
+            if(Math.abs(player.x - player.targetX) > 5) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.arc(player.targetX, player.targetY, 10, 0, Math.PI*2);
+                ctx.stroke();
+            }
+        }
+
+        function collectItem(item) {
+            item.collected = true;
+            sfx.play();
+            
+            if(item.type === 'key') {
+                collectedCount++;
+                document.getElementById('s'+item.id).classList.add('active');
+            }
+
+            showMsg(item.msg);
+        }
+
+        function showMsg(text) {
+            paused = true;
+            msgContent.innerHTML = text;
+            msgBox.style.display = 'flex';
+        }
+
+        function closeMsg() {
+            msgBox.style.display = 'none';
+            if(collectedCount === 3 && items[3].collected) {
+                // Finale
+                triggerFinale();
+            } else {
+                paused = false;
+            }
+        }
+
+        function triggerFinale() {
+            document.getElementById('final').style.display = 'flex';
+            confetti({ particleCount: 200, spread: 100, colors: ['#ffd700', '#ff69b4'] });
+            
+            const msg = "I beat the Quest! 🗝️❤️ My treasure is ME (and You)! Happy Valentine's Day!";
+            document.getElementById('wa-link').href = `https://wa.me/${yourPhoneNumber}?text=${encodeURIComponent(msg)}`;
+        }
+
+    </script>
+</body>
+</html>
